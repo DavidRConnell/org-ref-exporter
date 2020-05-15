@@ -28,6 +28,12 @@
     ("doku" . #'orx-doku-filter))
   "Filters to apply before running pandoc for type specific tweaks.")
 
+(defvar orx-preferred-figure-types-alist
+  '(("docx" . "pdf")
+    ("html" . "svg")
+    ("md" . "svg")
+    ("doku" . "png")))
+
 (defun org-ref-export (ext &optional async subtreep visible-only body-only options)
   (org-latex-export-to-latex async subtreep visible-only body-only options)
   (let* ((bib-file (if (> (length (org-ref-get-bibtex-keys)) 0)
@@ -39,8 +45,9 @@
          (buf (find-file-noselect tex-file)))
 
     (with-current-buffer buf
-      (or-convert-tikz-figures)
-      (or-fix-references)
+      (orx--convert-tikz-figures
+       (cdr (assoc ext orx-preferred-figure-types-alist)))
+      (orx--fix-references)
       (if bib-file
           (or-add-reference-header))
       (save-buffer)
@@ -49,8 +56,9 @@
     (shell-command (orx-pandoc-command basename "org" ext bib-file))
     (message "File converted successfully")))
 
-(defun or-convert-tikz-figures ()
-  "Convert all tikz figures in file to pdf."
+(defun orx--convert-tikz-figures (figure-ext)
+  "Convert all tikz figures in file to preferred FIGURE-EXT.
+See \\[orx-preferred-figure-types-alist]."
 
   (let* ((tikz-regex "\\\\input{\\(.*?\\).tikz}")
          (figure-regex (concat "\\(\\\\resizebox{\\(.*?\\)}{!}{" tikz-regex "}\\)"
@@ -73,12 +81,12 @@
                                size
                                basename))
 
-        (if (or (not (file-exists-p (concat basename ".pdf")))
-                (< (or-file-modification-time (concat basename ".pdf"))
-                   (or-file-modification-time (concat basename ".tikz"))))
+        (if (or (not (file-exists-p (concat basename figure-ext)))
+                (< (orx--file-modification-time (concat basename figure-ext))
+                   (orx--file-modification-time (concat basename ".tikz"))))
 
             (progn
-              (or-tikz2pdf basename)
+              (orx--tikz-convert basename figure-ext)
               (message (concat basename ".tikz converted to pdf"))))))))
 
 (defun or-file-modification-time (file)
@@ -87,10 +95,10 @@
                       (file-attribute-modification-time
                        (file-attributes file)))))
 
-(defun or-tikz2pdf (basename)
-  "Convert tikz figure FILENAME to a png file."
+(defun orx--tikz-converter (basename out-ext)
+  "Convert BASENAME.tikz figure to a OUT-EXT type figure."
   (let ((textemplate (concat
-                      "\\documentclass[tikz,convert={outfile=%1$s.pdf}]{standalone}\n"
+                      "\\documentclass[tikz,convert={outfile=%1$s.%2$s}]{standalone}\n"
                       "\\usepackage{graphicx}\n"
                       "\\usepackage{pgfplots}\n"
                       "\\pgfplotsset{compat=1.16}\n"
@@ -99,7 +107,7 @@
                       "\\end{document}"))
         (command "latex --shell-escape"))
     (with-temp-buffer
-      (insert (format textemplate basename))
+      (insert (format textemplate basename out-ext))
       (write-file "temp.tex"))
     (shell-command (concat command " temp.tex"))
     ;; (dolist (f (directory-files "." nil "temp\..*"))
