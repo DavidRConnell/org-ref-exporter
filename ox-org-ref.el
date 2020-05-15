@@ -140,16 +140,13 @@ See \\[orx-preferred-figure-types-alist]."
             ((string= type "eq")
              (progn
                (replace-match "")
-               (re-search-forward eq-re nil t)
-               (replace-match (format "%s%s \\\\qquad \\\\left(%s\\\\right)%s"
-                                      (match-string 1)
-                                      (replace-regexp-in-string "\\\\" "\\\\\\\\"
-                                                                (match-string 2))
-                                      (cdr (assoc label
-                                                  reference-alist))
-                                      (replace-regexp-in-string "\\\\" "\\\\\\\\"
-                                                                (match-string 3))
-                                      ))))))
+               (re-search-forward orx-eq-re nil t)
+               (replace-match
+                (format "%s%s \\\\qquad \\\\left(%s\\\\right)%s"
+                        (match-string 1)
+                        (orx--fix-backslashes (match-string 2))
+                        (cdr (assoc label reference-alist))
+                        (orx--fix-backslashes (match-string 3))))))))
 
     (goto-char (point-min))
     (while (re-search-forward orx-ref-re nil t)
