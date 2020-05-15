@@ -27,6 +27,11 @@
     ("doku" . "dokuwiki")
     ("org" . "org")))
 
+(defvar orx-label-re (label-re "\\\\label{\\(\\(.*?\\):.*?\\)}"))
+(defvar orx-ref-re "\\\\\\(c|auto\\)ref{\\(\\(.*?\\):.*?\\)}")
+(defvar orx-eq-re "\\(^\s*\\)\\(.*?\\)\\(\n\\\\end{.*?}\\)")
+(defvar orx-graphicx-re "\\\\includegraphic{.*?}")
+
 (defun orx-pandoc-command (basename from-ext to-ext &optional bib-file)
   "Generate pandoc shell command to run.
 BASENAME should be file without extension, FROM-EXT and TO-EXT are the

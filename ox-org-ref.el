@@ -58,15 +58,15 @@
   "Convert all tikz figures in file to preferred FIGURE-EXT.
 See \\[orx-preferred-figure-types-alist]."
 
-  (let* ((tikz-regex "\\\\input{\\(.*?\\).tikz}")
-         (figure-regex (concat "\\(\\\\resizebox{\\(.*?\\)}{!}{" tikz-regex "}\\)"
+  (let* ((tikz-re "\\\\input{\\(.*?\\).tikz}")
+         (figure-re (concat "\\(\\\\resizebox{\\(.*?\\)}{!}{" tikz-re "}\\)"
                                "\\|"
-                               "\\(" tikz-regex "\\)"))
+                               "\\(" tikz-re "\\)"))
          (fig-width "[width=%s]")
          (include-command "\\\\includegraphics%s{%s.pdf}"))
 
     (goto-char (point-min))
-    (while (re-search-forward figure-regex nil t)
+    (while (re-search-forward figure-re nil t)
       (let ((basename (if (match-string 1)
                           (match-string 3)
                         (match-string 5)))
@@ -108,21 +108,17 @@ See \\[orx-preferred-figure-types-alist]."
       (insert (format textemplate basename out-ext))
       (write-file "temp.tex"))
     (shell-command (concat command " temp.tex"))
-    ;; (dolist (f (directory-files "." nil "temp\..*"))
-    ;;   (delete-file f))
-    ))
+    (dolist (f (directory-files "." nil "temp\..*"))
+      (delete-file f))))
 
-(defun or-fix-references ()
-  (message "Fixing references")
-  (let ((label-re "\\\\label{\\(\\(.*?\\):.*?\\)}")
-        (ref-re "\\\\cref{\\(\\(.*?\\):.*?\\)}")
-        (eq-re "\\(^\s*\\)\\(.*?\\)\\(\n\\\\end{.*?}\\)")
-        (counter-alist)
+(defun orx--fix-references ()
+  (let ((counter-alist)
         (reference-alist)
         (label)
         (type))
+
     (goto-char (point-min))
-    (while (re-search-forward label-re nil t)
+    (while (re-search-forward orx-label-re nil t)
       (setq type (match-string 2))
       (setq label (match-string 1))
       (if (assoc type counter-alist)
@@ -154,21 +150,21 @@ See \\[orx-preferred-figure-types-alist]."
                                       ))))))
 
     (goto-char (point-min))
-    (while (re-search-forward ref-re nil t)
+    (while (re-search-forward orx-ref-re nil t)
       (setq type (cond
-                  ((string= (match-string 2) "fig")
+                  ((string= (match-string 3) "fig")
                    "Figure")
-                  ((string= (match-string 2) "sec")
+                  ((string= (match-string 3) "sec")
                    "Section")
-                  ((string= (match-string 2) "tab")
+                  ((string= (match-string 3) "tab")
                    "Table")
-                  ((string= (match-string 2) "eq")
+                  ((string= (match-string 3) "eq")
                    "eq")))
 
-      (replace-match (format "%s %s"
-                             type
-                             (cdr
-                              (assoc (match-string 1) reference-alist)))))))
+      (replace-match
+       (format "%s %s"
+               type
+               (cdr (assoc (match-string 2) reference-alist)))))))
 
 (defun orx--add-reference-header ()
   (goto-char (point-max))
