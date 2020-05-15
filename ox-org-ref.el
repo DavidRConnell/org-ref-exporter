@@ -49,6 +49,8 @@
       (if bib-file
           (orx--add-reference-header))
       (save-buffer)
+      (if (cdr (assoc ext orx-filter-func-alist))
+          (funcall (cdr (assoc ext orx-filter-func-alist))))
       (kill-buffer buf))
 
     (shell-command (orx-pandoc-command basename "org" ext bib-file))
@@ -172,6 +174,21 @@ See \\[orx-preferred-figure-types-alist]."
   (if (match-string 0)
       ;; extra \\ needed because replace-match wants for but match-string returns only 2
       (replace-match (concat "\\\\section{References}\n\\" (match-string 0)))))
+
+(defun orx-doku-filter ()
+  (orx-remove-figure-sub-dirs))
+
+(defun orx--remove-figure-sub-dirs ()
+  (goto-char (point-min))
+  (while (re-search-forward orx-graphicx-re nil t)
+    (let ((fig-path (match-string 1)))
+      (replace-match
+       (replace-regexp-in-string fig-path
+                                 (file-name-nondirectory fig-path)
+                                 (orx--fix-backslashes (match-string 0)))))))
+
+(defun orx--fix-backslashes (str)
+  (replace-regexp-in-string "\\\\" "\\\\\\\\" str))
 
 (defun org-ref-export-to-docx (&optional async subtreep visible-only body-only options)
   "Export current buffer to a word docx file via ox-latex and pandoc."
