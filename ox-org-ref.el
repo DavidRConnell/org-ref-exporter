@@ -36,9 +36,7 @@
 
 (defun org-ref-export (ext &optional async subtreep visible-only body-only options)
   (org-latex-export-to-latex async subtreep visible-only body-only options)
-  (let* ((bib-file (if (> (length (org-ref-get-bibtex-keys)) 0)
-                       (expand-file-name (first (org-ref-find-bibliography)))
-                     nil))
+  (let* ((bib-file (orx--get-bib))
          (basename (file-name-sans-extension (buffer-file-name)))
          (tex-file (concat basename ".tex"))
          (new-file (concat basename "." ext))

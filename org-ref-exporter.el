@@ -44,8 +44,15 @@ is an optional bib file for creating the bibliography."
           bib-file
           basename to-ext))
 
-(load "ox-org-ref.el")
+(defun orx--get-bib ()
+  "Get the bib file referenced in the current file.
+If there is no bib file return nil."
 
+  (if (> (length (org-ref-get-bibtex-keys)) 0)
+      (expand-file-name (first (org-ref-find-bibliography)))
+    nil))
+
+(load "ox-org-ref.el")
 
 (provide 'org-ref-exporter)
 ;;; org-ref-exporter.el ends here
