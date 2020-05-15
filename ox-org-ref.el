@@ -1,9 +1,32 @@
-;;; ~/.doom.d/extras/org-ref-ox.el -*- lexical-binding: t; -*-
-;;;
-;;; Org ref exporter.
+;;; org-ref-ox.el --- View peers' comments in ediff -*- lexical-binding: t; -*-
+;;
+;; Copyright (C) 2020 David R. Connell
+;;
+;; Author: David R. Connell <https://github/DavidRConnell>
+;; Created: May 14, 2020
+;; Modified: May 14, 2020
+;; Version: 0.0.1
+;; Keywords:
+;; Homepage: https://github.com/DavidRConnell/org-ref-exporter
+;; Package-Requires: ((emacs 28.0.50) (cl-lib "0.5") (org-ref) (pandoc "2.0"))
+;;
+;; This file is not part of GNU Emacs.
+;;
+;;; Commentary:
+;;
+;;
+;;
+;;; Code:
 
 (require 'cl-lib)
 (require 'org-ref)
+
+(defvar orx-filter-func-alist
+  '(("docx" . nil)
+    ("html" . nil)
+    ("md" . nil)
+    ("doku" . #'orx-doku-filter))
+  "Filters to apply before running pandoc for type specific tweaks.")
 
 (defun org-ref-export (ext &optional async subtreep visible-only body-only options)
   (org-latex-export-to-latex async subtreep visible-only body-only options)
@@ -13,16 +36,6 @@
          (basename (file-name-sans-extension (buffer-file-name)))
          (tex-file (concat basename ".tex"))
          (new-file (concat basename "." ext))
-         (pandoc-command (concat "pandoc "
-                                 tex-file
-                                 " --filter=pandoc-citeproc "
-                                 (if bib-file
-                                     (concat "--bibliography=" bib-file " "))
-                                 (if (string= ext "doku")
-                                     "-t dokuwiki ")
-                                 "-o "
-                                 new-file))
-
          (buf (find-file-noselect tex-file)))
 
     (with-current-buffer buf
@@ -33,7 +46,7 @@
       (save-buffer)
       (kill-buffer buf))
 
-    (shell-command pandoc-command)
+    (shell-command (orx-pandoc-command basename "org" ext bib-file))
     (message "File converted successfully")))
 
 (defun or-convert-tikz-figures ()
