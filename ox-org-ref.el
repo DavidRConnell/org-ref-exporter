@@ -49,7 +49,7 @@
        (cdr (assoc ext orx-preferred-figure-types-alist)))
       (orx--fix-references)
       (if bib-file
-          (or-add-reference-header))
+          (orx--add-reference-header))
       (save-buffer)
       (kill-buffer buf))
 
@@ -89,8 +89,8 @@ See \\[orx-preferred-figure-types-alist]."
               (orx--tikz-convert basename figure-ext)
               (message (concat basename ".tikz converted to pdf"))))))))
 
-(defun or-file-modification-time (file)
-  "Posix time of last modification."
+(defun orx--file-modification-time (file)
+  "Posix time of last modification of FILE."
   (string-to-number (format-time-string "%s"
                       (file-attribute-modification-time
                        (file-attributes file)))))
@@ -172,7 +172,7 @@ See \\[orx-preferred-figure-types-alist]."
                              (cdr
                               (assoc (match-string 1) reference-alist)))))))
 
-(defun or-add-reference-header ()
+(defun orx--add-reference-header ()
   (goto-char (point-max))
   (re-search-backward "\\\\bibliography{.*?}" nil t)
   (if (match-string 0)
